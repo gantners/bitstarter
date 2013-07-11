@@ -20,12 +20,15 @@ References:
    - https://developer.mozilla.org/en-US/docs/JSON
    - https://developer.mozilla.org/en-US/docs/JSON#JSON_in_Firefox_2
 */
-
+var sys = require('util');
+var rest = require('restler');
 var fs = require('fs');
 var program = require('commander');
 var cheerio = require('cheerio');
+
 var HTMLFILE_DEFAULT = "index.html";
 var CHECKSFILE_DEFAULT = "checks.json";
+var URL_DEFAULT = "http://protected-fortress-1301.herokuapp.com";
 
 var assertFileExists = function(infile) {
     var instr = infile.toString();
@@ -36,16 +39,25 @@ var assertFileExists = function(infile) {
     return instr;
 };
 
-var cheerioHtmlFile = function(htmlfile) {
-    return cheerio.load(fs.readFileSync(htmlfile));
+var cheerioHtml = function(html) {
+    return cheerio.load(html);
 };
 
 var loadChecks = function(checksfile) {
     return JSON.parse(fs.readFileSync(checksfile));
 };
 
-var checkHtmlFile = function(htmlfile, checksfile) {
-    $ = cheerioHtmlFile(htmlfile);
+var loadFile = function(file){
+    return fs.readFileSync(file);
+}
+
+var checkHtmlFile = function(htmlfile,checksfile){
+    console.log('Checking html file: ' + htmlfile);
+	return checkHtml(loadFile(htmlfile),checksfile);
+}
+
+var checkHtml = function(html, checksfile) {
+    $ = cheerioHtml(html);
     var checks = loadChecks(checksfile).sort();
     var out = {};
     for(var ii in checks) {
@@ -55,6 +67,50 @@ var checkHtmlFile = function(htmlfile, checksfile) {
     return out;
 };
 
+var validateUrl = function(url,checksfile){
+	console.log('Downloading url: ' + url);
+
+	rest.get(url).on('complete', function(result) {
+		console.log('Downloaded ' + url);
+		if (result instanceof Error) {
+			this.retry(5000); // try again after 5 sec
+			return false;
+		} else {
+			console.log('Validating url: ' + url);
+			jsonify(checkHtml(result,checksfile));
+		}
+
+	});
+};
+
+var writeUrlToFile = function(htmlString,filename){
+	console.log(filename + '\n' + htmlString);
+	fs.writeFile(filename, htmlString, function(err) {
+		if(err) {
+        		console.log(err);
+		} else {
+        		console.log("The file was saved!");
+    		}
+	}); 
+};
+
+var jsonify = function(checkJson){
+    var outJson = JSON.stringify(checkJson, null, 4);
+    console.log(outJson);
+
+}
+
+var isUrl = function(url){
+	console.log('url: ' + url.toString());
+	if(url)
+		if(~url.toString().indexOf('http'))
+			return url.toString();
+		else if (~url.toString().indexOf('default'))
+			return URL_DEFAULT;
+	console.log('No valid url given.');
+	process.exit(1);
+}
+
 var clone = function(fn) {
     // Workaround for commander.js issue.
     // http://stackoverflow.com/a/6772648
@@ -63,12 +119,18 @@ var clone = function(fn) {
 
 if(require.main == module) {
     program
-        .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
-        .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
+        .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists))
+        .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists))
+	.option('-u, --url <url>','Url',clone(isUrl))
         .parse(process.argv);
-    var checkJson = checkHtmlFile(program.file, program.checks);
-    var outJson = JSON.stringify(checkJson, null, 4);
-    console.log(outJson);
+	
+	if(program.file)
+		jsonify(checkHtmlFile(program.file,program.checks));
+	
+	else if(program.url)
+		validateUrl(program.url, program.checks);
+	else
+	        console.log('Please sepcify at least --url or --file');
 } else {
     exports.checkHtmlFile = checkHtmlFile;
 }
