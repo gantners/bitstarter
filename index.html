@@ -98,6 +98,12 @@
       .footer a {
         color: #ccccff;
       }
+      
+       /* http://support.addthis.com/customer/portal/questions/1136093-share-buttons-in-center-position */      
+         div.addthis_toolbox {
+          width:180px;
+          margin: 0 auto;
+         }
     </style>
   </head>
   <body>
@@ -248,6 +254,32 @@
           <img class="img-polaroid"  alt="Placeholder" src="http://placehold.it/480x300">
         </div>
       </div>
+      
+      <div class="span8 offset2 social">
+      <div class="addthis_toolbox addthis_default_style addthis_32x32_style">
+        <a class="addthis_button_preferred_1"></a>
+        <a class="addthis_button_preferred_2"></a>
+        <a class="addthis_button_compact"></a>
+        <a class="addthis_counter addthis_bubble_style"></a>
+      </div>
+      <!-- AddThis Smart Layers BEGIN -->
+        <!-- Go to http://www.addthis.com/get/smart-layers to customize -->
+        <script type="text/javascript" src="//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-52033c96020d2a11"></script>
+        <script type="text/javascript">
+          addthis.layers({
+            'theme' : 'transparent',
+            'share' : {
+              'position' : 'left',
+              'numPreferredServices' : 5
+            },  
+            'whatsnext' : {},  
+            'recommended' : {
+              'title': 'Recommended for you:'
+            } 
+          });
+        </script>
+        <!-- AddThis Smart Layers END -->
+        </div>
 
       <!-- For the FAQ, we introduce a little bit of JS, using the accordion. -->
       <!-- This brings in jquery.js and bootstrap.js as dependencies. -->
